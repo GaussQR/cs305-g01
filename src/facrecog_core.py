@@ -7,6 +7,13 @@ import numpy as np
 import os
 from PIL import Image,ImageFont, ImageDraw, ImageEnhance
 
+from zipfile import ZipFile 
+  
+def extract_zip(file_name):  
+    with ZipFile(file_name, 'r') as zip: 
+        zip.extractall() 
+    return file_name.split('.')[0]
+
 def add_target_faces(path):
 	faces = {}
 	for img in glob.glob(path + "/*.jpg"):
@@ -85,6 +92,8 @@ def identify_faces_video(path_video, faces, show_output=0):
                 break
     return faces_in_video
 
-add_target_faces('known')
+z = input("Enter zip file path")
+folder_name = extract_zip(z)
+add_target_faces(folder_name)
 faces = load_encoded_faces('encoded_faces.pkl')
 identify_faces_video('al.mp4', faces, 1)

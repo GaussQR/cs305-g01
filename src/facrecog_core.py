@@ -2,8 +2,9 @@ import dlib
 import face_recognition
 import glob
 import pickle
+import cv2
+import numpy as np
 from PIL import Image,ImageFont, ImageDraw, ImageEnhance
-#import sqlite3
 
 def add_target_faces(path):
 	faces = {}
@@ -21,7 +22,7 @@ def add_target_faces(path):
 def load_encoded_faces(path_file):
 	return pickle.load(open(path_file,'rb'))
 
-def identify_faces_image(img):
+def identify_faces_image(img, save_output=0):
 	faces = load_encoded_faces('encoded_faces.pkl')
 	face_enc, name_face = list(faces.values()), list(faces.keys()) # Loading face encoding along with their names.
 
@@ -41,16 +42,32 @@ def identify_faces_image(img):
 		for index in indices:
 			recog_name = name_face[index]
 			face_in_img.append((recog_name, c))
-			# draw.rectangle(((c[3],c[0]), (c[1],c[2])), outline='red')
-			# draw.text((c[3]+1, c[2]-1), recog_name, font = ImageFont.truetype('arial.ttf', 160))
-			# src_img.save(img.split('.')[0]+"output.jpg")
+			if save_output:
+				draw.rectangle(((c[3],c[0]), (c[1],c[2])), outline='red')
+				draw.text((c[3]+1, c[2]-1), recog_name, font = ImageFont.truetype('arial.ttf', 160))
+				src_img.save(img.split('.')[0]+"output.jpg")
 	return face_in_img
 
-def identify_faces_images(path_folder):
+def identify_faces_images(path_folder, save_output=0):
 	faces_in_folder = []
 	for img in glob.glob(path_folder + "*.jpg"):
-		faces_in_folder.append(identify_faces_images(img))
+		faces_in_folder.append(identify_faces_images(img, save_output))
 	return faces_in_folder
 
-def identify_faces_video(path_video):
-	
+def identify_faces_video(path_video, show_output=0):
+	cap = cv2.VideoCapture(path_video)
+	faces_in_video = []
+	while cap.isOpened():
+		ret, frame = cap.read()
+		# frame = cv2.resize(frame, (0, 0), fx = 0.25, fy = 0.25)
+		frame = frame[:, :, ::-1]
+		res = identify_faces_image(frame) #[(name, coordin)]
+		faces_in_video.append(res)
+		if show_output:
+			draw = ImageDraw.Draw(frame)
+			for name, (top, right, bottom, left) in res:
+				draw.rectangle((left, top), (right, bottom), outline='red')
+				draw.text((left + 1, bottom - 1), name, font = ImageFont.truetype('arial.ttf', 160))
+			cv2.imshow('Video', frame)
+	cv2.destroyAllWindows()
+	return faces_in_video

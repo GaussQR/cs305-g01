@@ -4,6 +4,7 @@ import glob
 import pickle
 import cv2
 import numpy as np
+import os
 from PIL import Image,ImageFont, ImageDraw, ImageEnhance
 
 def add_target_faces(path):
@@ -19,10 +20,11 @@ def add_target_faces(path):
 	with open('encoded_faces.pkl', 'wb') as fp:
 		pickle.dump(faces, fp)
 
-def load_encoded_faces(path_file):
+def load_encoded_faces(path_file='encoded_faces.pkl'):
 	return pickle.load(open(path_file,'rb'))
 
 def identify_faces_image(img, faces, save_output=0, isfile=0):
+    print(save_output)
     face_enc, name_face = list(faces.values()), list(faces.keys()) # Loading face encoding along with their names.
     group_img = face_recognition.load_image_file(img) if isfile == 0 else img
     coordinates = face_recognition.face_locations(group_img)
@@ -32,7 +34,7 @@ def identify_faces_image(img, faces, save_output=0, isfile=0):
     face_in_img = []
     # print(img," contains faces: ")
     for (c,each_encoding) in zip(coordinates,face_encodings):
-        results = face_recognition.compare_faces(face_enc, each_encoding, 0.6 if isfile else 0.5)
+        results = face_recognition.compare_faces(face_enc, each_encoding, 0.5)
         indices = [i for i, value in enumerate(results) if value == True] # Should be one       
         # assert(len(indices) == 1)
         for index in indices:
@@ -40,9 +42,11 @@ def identify_faces_image(img, faces, save_output=0, isfile=0):
             face_in_img.append((recog_name, c))
             if save_output:
                 draw.rectangle(((c[3],c[0]), (c[1],c[2])), outline='red')
-                draw.text((c[3]+1, c[2]-1), recog_name)#, font = ImageFont.truetype('arial.ttf', 160))
+                draw.text((c[3]+1, c[2]-1), recog_name, font = ImageFont.truetype('arial.ttf', 160))
     if save_output:
-        src_img.save('output_' + img.split('.')[0] + '.jpg')
+        if 'output' not in os.listdir():
+            os.mkdir('output')
+        src_img.save('output/' + img.split('/')[-1])
     return face_in_img
 
 def identify_faces_images(path_folder, faces, save_output=0):
